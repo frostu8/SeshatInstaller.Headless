@@ -1,0 +1,42 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="Current">
+  <PropertyGroup>
+    <AssemblyName>SeshatInstaller.Headless</AssemblyName>
+    <ProjectGuid>{70D79542-EAAE-4B63-9AEB-FF99275EC3DF}</ProjectGuid>
+    <OutputPath>bin/</OutputPath>
+    <!-- <ILRepackPath>ilrepack/ILRepack.exe</ILRepackPath> -->
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="lib\Mono.Cecil.dll" />
+    <Reference Include="lib\Mono.Cecil.Mdb.dll" />
+    <Reference Include="lib\Mono.Cecil.Pdb.dll" />
+    <Reference Include="lib\Mono.Cecil.Rocks.dll" />
+    <Reference Include="lib\Mono.Options.dll"/>
+    <Reference Include="lib\MonoMod.exe"/>
+    <Reference Include="lib\MonoMod.Utils.dll"/>
+  </ItemGroup>
+  <Target Name="Build">
+    <MakeDir Directories="$(OutputPath)" Condition="!Exists('$(OutputPath)')" />
+    <CSC Sources="@(Compile)" References="@(Reference)" OutputAssembly="$(OutputPath)$(AssemblyName).exe">
+      <Output TaskParameter="OutputAssembly" ItemName="EXEFile" />
+    </CSC>
+    <Message Text="Output file saved to @(EXEFile)" />
+  </Target>
+  <Target Name="CopyReferences" AfterTargets="Build">
+    <Copy SourceFiles="@(Reference)" DestinationFolder="$(OutputPath)" />
+  </Target>
+  <!--
+  <Target Name="ILRepack" AfterTargets="CopyReferences;Build">
+    <ConvertToAbsolutePath Paths="$(ILRepackPath)">
+      <Output TaskParameter="AbsolutePaths" PropertyName="ILRepackPath" />
+    </ConvertToAbsolutePath>
+    <ConvertToAbsolutePath Paths="$(OutputPath)">
+      <Output TaskParameter="AbsolutePaths" PropertyName="OutputPath" />
+    </ConvertToAbsolutePath>
+    <Exec Command="$(ILRepackPath) &quot;/out:$(OutputPath)$(AssemblyName).exe&quot; &quot;$(OutputPath)$(AssemblyName)_unshaded.exe&quot; @(Reference,' ')" />
+  </Target>
+  -->
+</Project>
