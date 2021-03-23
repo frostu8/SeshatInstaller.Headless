@@ -2,31 +2,59 @@
   <PropertyGroup>
     <AssemblyName>SeshatInstaller.Headless</AssemblyName>
     <ProjectGuid>{70D79542-EAAE-4B63-9AEB-FF99275EC3DF}</ProjectGuid>
-    <OutputPath>bin/</OutputPath>
+    <OutputPath>bin\</OutputPath>
     <!-- <ILRepackPath>ilrepack/ILRepack.exe</ILRepackPath> -->
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="AssemblyLoader.cs" />
+    <Compile Include="Patcher.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="lib\Mono.Cecil.dll" />
     <Reference Include="lib\Mono.Cecil.Mdb.dll" />
     <Reference Include="lib\Mono.Cecil.Pdb.dll" />
     <Reference Include="lib\Mono.Cecil.Rocks.dll" />
-    <Reference Include="lib\Mono.Options.dll"/>
-    <Reference Include="lib\MonoMod.exe"/>
-    <Reference Include="lib\MonoMod.Utils.dll"/>
+    <Reference Include="lib\Mono.Options.dll" />
+    <Reference Include="lib\MonoMod.exe" />
+    <Reference Include="lib\MonoMod.Utils.dll" />
   </ItemGroup>
+  <UsingTask TaskName="BuildResources" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <In ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Out ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        using (System.Resources.ResourceWriter rw = new System.Resources.ResourceWriter(Out)) {
+            foreach (var item in In) {
+                string filename = System.IO.Path.GetFileName(item.ItemSpec);
+
+                System.IO.MemoryStream mem = new System.IO.MemoryStream();
+
+                using (System.IO.FileStream file = System.IO.File.OpenRead(item.ItemSpec)) {
+                    using (var memZip = new System.IO.Compression.GZipStream(mem, System.IO.Compression.CompressionMode.Compress, true)) {
+                        file.CopyTo(memZip);
+                    }
+                }
+
+                rw.AddResource(filename, mem);
+            }
+        }
+      </Code>
+    </Task>
+  </UsingTask>
+  <Target Name="EmbedResources" BeforeTargets="Build">
+    <BuildResources In="@(Reference)" Out="Resources.resources" />
+  </Target>
   <Target Name="Build">
     <MakeDir Directories="$(OutputPath)" Condition="!Exists('$(OutputPath)')" />
-    <CSC Sources="@(Compile)" References="@(Reference)" OutputAssembly="$(OutputPath)$(AssemblyName).exe">
+    <CSC Sources="@(Compile)" References="@(Reference)" OutputAssembly="$(OutputPath)$(AssemblyName).exe" Resources="Resources.resources">
       <Output TaskParameter="OutputAssembly" ItemName="EXEFile" />
     </CSC>
     <Message Text="Output file saved to @(EXEFile)" />
-  </Target>
-  <Target Name="CopyReferences" AfterTargets="Build">
-    <Copy SourceFiles="@(Reference)" DestinationFolder="$(OutputPath)" />
   </Target>
   <!--
   <Target Name="ILRepack" AfterTargets="CopyReferences;Build">
